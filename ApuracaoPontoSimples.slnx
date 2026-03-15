@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ApuracaoPontoSimples.Api/ApuracaoPontoSimples.Api.csproj" />
+    <Project Path="src/ApuracaoPontoSimples.Application/ApuracaoPontoSimples.Application.csproj" />
+    <Project Path="src/ApuracaoPontoSimples.Domain/ApuracaoPontoSimples.Domain.csproj" />
+    <Project Path="src/ApuracaoPontoSimples.Infrastructure/ApuracaoPontoSimples.Infrastructure.csproj" />
+  </Folder>
+</Solution>
