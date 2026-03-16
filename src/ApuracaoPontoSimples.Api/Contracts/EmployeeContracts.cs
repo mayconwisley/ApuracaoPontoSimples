@@ -4,7 +4,7 @@ namespace ApuracaoPontoSimples.Api.Contracts;
 
 public sealed record EmployerDto(Guid Id, string Name, string? Cnpj, string? Address);
 public sealed record CreateEmployerRequest(string Name, string? Cnpj, string? Address);
-public sealed record EmployeeDto(Guid Id, string Name, string? Pis, DateOnly? AdmissionDate, Guid EmployerId);
+public sealed record EmployeeDto(Guid Id, string Name, string? Pis, DateOnly? AdmissionDate, Guid EmployerId, Employer Employer);
 public sealed record EmployeeDetailsDto(Guid Id, string Name, string? Pis, DateOnly? AdmissionDate, Guid EmployerId, ScheduleConfigDto? Schedule);
 public sealed record ScheduleConfigDto(TimeSpan DailyHours, TimeSpan? DailyLimit, TimeSpan? SaturdayHours, TimeSpan? ToleranceEntry, TimeSpan? ToleranceExit, TimeSpan? NightStart, TimeSpan? NightEnd, TimeSpan? WeeklyHours, bool SaturdayCountsAsBank, bool UseDailyHoursAsY13);
 public sealed record CreateEmployeeRequest(string Name, string? Pis, DateOnly? AdmissionDate, Guid EmployerId, ScheduleConfigDto Schedule);
@@ -16,7 +16,7 @@ public static class EmployeeMappings
         => new(employer.Id, employer.Name, employer.Cnpj, employer.Address);
 
     public static EmployeeDto ToDto(this Employee employee)
-        => new(employee.Id, employee.Name, employee.Pis, employee.AdmissionDate, employee.EmployerId);
+        => new(employee.Id, employee.Name, employee.Pis, employee.AdmissionDate, employee.EmployerId, employee.Employer);
 
     public static EmployeeDetailsDto ToDetailsDto(this Employee employee)
         => new(

@@ -22,7 +22,10 @@ public sealed class EmployeesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetAll()
     {
-        var employees = await _db.Employees.AsNoTracking().ToListAsync();
+        var employees = await _db.Employees
+        .Include(i => i.Employer)
+        .AsNoTracking()
+        .ToListAsync();
         return Ok(employees.Select(e => e.ToDto()));
     }
 

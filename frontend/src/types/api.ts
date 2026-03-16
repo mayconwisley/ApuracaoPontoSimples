@@ -12,6 +12,7 @@ export interface Employee {
   pis?: string | null;
   admissionDate?: string | null;
   employerId: string;
+  employer : Employer;
 }
 
 export interface ScheduleConfig {

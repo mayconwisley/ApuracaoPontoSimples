@@ -59,3 +59,15 @@ export function toDateInput(date: Date): string {
   const day = `${date.getDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
+export function formatDateDisplay(value?: string | null): string{
+  if(!value)
+    return "-"
+
+  const dateOnly = value.length >= 10 ? value.slice(0, 10) : value;
+  const [year, month, day] = dateOnly.split("-");
+  if (!year || !month || !day) {
+    return value;
+  }
+  return `${day}/${month}/${year}`;
+}

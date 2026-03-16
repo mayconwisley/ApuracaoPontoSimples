@@ -19,7 +19,7 @@ import {
 } from "@mui/material";
 import { employeeApi } from "../services/api";
 import type { Employee, Employer } from "../types/api";
-import { fromDotnetTimeSpan, toDotnetTimeSpan } from "../utils/time";
+import { fromDotnetTimeSpan, toDotnetTimeSpan, formatDateDisplay } from "../utils/time";
 
 interface EmployeesPageProps {
   token: string;
@@ -328,7 +328,7 @@ export default function EmployeesPage({ token, employees, employers, onEmployees
                 <TableCell>Nome</TableCell>
                 <TableCell>PIS</TableCell>
                 <TableCell>Admissão</TableCell>
-                <TableCell>Employer</TableCell>
+                <TableCell>Empresa</TableCell>
                 <TableCell>Ações</TableCell>
               </TableRow>
             </TableHead>
@@ -337,8 +337,8 @@ export default function EmployeesPage({ token, employees, employers, onEmployees
                 <TableRow key={employee.id}>
                   <TableCell>{employee.name}</TableCell>
                   <TableCell>{employee.pis ?? "-"}</TableCell>
-                  <TableCell>{employee.admissionDate ?? "-"}</TableCell>
-                  <TableCell>{employee.employerId}</TableCell>
+                  <TableCell>{formatDateDisplay(employee.admissionDate) ?? "-"}</TableCell>
+                  <TableCell>{employee.employer.name}</TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1}>
                       <Button size="small" variant="outlined" onClick={() => startEdit(employee)}>

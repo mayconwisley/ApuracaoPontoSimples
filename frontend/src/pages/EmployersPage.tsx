@@ -153,7 +153,6 @@ export default function EmployersPage({ token, employers, onEmployersChange }: E
                 <TableCell>Nome</TableCell>
                 <TableCell>CNPJ</TableCell>
                 <TableCell>Endereço</TableCell>
-                <TableCell>ID</TableCell>
                 <TableCell>Ações</TableCell>
               </TableRow>
             </TableHead>
@@ -163,7 +162,6 @@ export default function EmployersPage({ token, employers, onEmployersChange }: E
                   <TableCell>{employer.name}</TableCell>
                   <TableCell>{employer.cnpj ?? "-"}</TableCell>
                   <TableCell>{employer.address ?? "-"}</TableCell>
-                  <TableCell>{employer.id}</TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1}>
                       <Button size="small" variant="outlined" onClick={() => startEdit(employer)}>

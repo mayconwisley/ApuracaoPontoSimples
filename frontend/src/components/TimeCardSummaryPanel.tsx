@@ -15,7 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { TimeCard } from "../types/api";
-import { fromDotnetTimeSpan } from "../utils/time";
+import { fromDotnetTimeSpan, formatDateDisplay } from "../utils/time";
 
 const weekdayFormatter = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
 
@@ -25,16 +25,6 @@ function getWeekdayLabel(dateIso: string): string {
   const label = weekdayFormatter.format(date);
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
-
-function formatDateDisplay(value: string): string {
-  const dateOnly = value.length >= 10 ? value.slice(0, 10) : value;
-  const [year, month, day] = dateOnly.split("-");
-  if (!year || !month || !day) {
-    return value;
-  }
-  return `${day}/${month}/${year}`;
-}
-
 interface TimeCardSummaryPanelProps {
   timeCard: TimeCard;
   employeeName?: string;

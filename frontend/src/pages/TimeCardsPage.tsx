@@ -19,7 +19,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { employeeApi, holidayApi, timeCardApi } from "../services/api";
 import type { AbsenceType, DayCode, Employee, Holiday, HolidayType, TimeCard } from "../types/api";
-import { fromDotnetTimeSpan, toTimeSpan } from "../utils/time";
+import { formatDateDisplay, fromDotnetTimeSpan, toTimeSpan } from "../utils/time";
 
 type DayForm = {
   date: string;

@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { holidayApi } from "../services/api";
 import type { Holiday } from "../types/api";
+import { formatDateDisplay } from "../utils/time";
 
 interface HolidaysPageProps {
   token: string;
@@ -166,7 +167,7 @@ export default function HolidaysPage({ token, holidays, onHolidaysChange }: Holi
             <TableBody>
               {holidays.map((holiday) => (
                 <TableRow key={holiday.id}>
-                  <TableCell>{holiday.date}</TableCell>
+                  <TableCell>{formatDateDisplay(holiday.date)}</TableCell>
                   <TableCell>{holiday.description}</TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1}>
