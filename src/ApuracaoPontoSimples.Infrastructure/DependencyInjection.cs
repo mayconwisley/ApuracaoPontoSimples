@@ -8,18 +8,21 @@ namespace ApuracaoPontoSimples.Infrastructure;
 
 public static class DependencyInjection
 {
-	public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
-	{
-		var conn = configuration.GetConnectionString("DefaultConnection");
-		services.AddDbContext<AppDbContext>(opt => opt.UseNpgsql(conn));
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    {
+        var conn = configuration.GetConnectionString("DefaultConnection");
+        var sqlPassword = Environment.GetEnvironmentVariable("SQLPassword", EnvironmentVariableTarget.Machine);
+        conn = conn.Replace("{{SQLPassword}}", sqlPassword);
 
-		services.AddIdentityCore<ApplicationUser>(options =>
-		{
-			options.User.RequireUniqueEmail = true;
-		})
-		.AddRoles<ApplicationRole>()
-		.AddEntityFrameworkStores<AppDbContext>();
+        services.AddDbContext<AppDbContext>(opt => opt.UseNpgsql(conn));
 
-		return services;
-	}
+        services.AddIdentityCore<ApplicationUser>(options =>
+        {
+            options.User.RequireUniqueEmail = true;
+        })
+        .AddRoles<ApplicationRole>()
+        .AddEntityFrameworkStores<AppDbContext>();
+
+        return services;
+    }
 }
