@@ -13,5 +13,5 @@ public sealed class TimeInterval
         End = end;
     }
 
-    public TimeInterval() {}
+    public TimeInterval() { }
 }

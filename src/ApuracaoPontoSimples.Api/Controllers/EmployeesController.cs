@@ -1,9 +1,8 @@
 using ApuracaoPontoSimples.Api.Contracts;
-using ApuracaoPontoSimples.Domain.Entities;
-using ApuracaoPontoSimples.Infrastructure.Persistence;
+using ApuracaoPontoSimples.Application.Interfaces;
+using ApuracaoPontoSimples.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ApuracaoPontoSimples.Api.Controllers;
 
@@ -12,97 +11,71 @@ namespace ApuracaoPontoSimples.Api.Controllers;
 [Authorize]
 public sealed class EmployeesController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly IEmployeeService _employees;
 
-    public EmployeesController(AppDbContext db)
+    public EmployeesController(IEmployeeService employees)
     {
-        _db = db;
+        _employees = employees;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetAll(CancellationToken cancellationToken)
     {
-        var employees = await _db.Employees
-        .Include(i => i.Employer)
-        .AsNoTracking()
-        .ToListAsync();
+        var employees = await _employees.GetAllAsync(cancellationToken);
         return Ok(employees.Select(e => e.ToDto()));
     }
 
     [HttpPost]
-    public async Task<ActionResult<EmployeeDto>> Create(CreateEmployeeRequest request)
+    public async Task<ActionResult<EmployeeDto>> Create(CreateEmployeeRequest request, CancellationToken cancellationToken)
     {
-        var employerExists = await _db.Employers.AnyAsync(e => e.Id == request.EmployerId);
-        if (!employerExists)
-            return BadRequest("Employer not found. Create an employer first.");
+        var input = new CreateEmployeeInput(
+            request.Name,
+            request.Pis,
+            request.AdmissionDate,
+            request.EmployerId,
+            request.Schedule == null ? null : request.Schedule.ToInput());
 
-        var employee = new Employee
-        {
-            Name = request.Name,
-            Pis = request.Pis,
-            AdmissionDate = request.AdmissionDate,
-            EmployerId = request.EmployerId,
-            Schedule = request.Schedule.ToEntity()
-        };
-        if (employee.Schedule != null)
-            employee.Schedule.EmployeeId = employee.Id;
+        var result = await _employees.CreateAsync(input, cancellationToken);
+        if (!result.Success)
+            return BadRequest(result.ErrorMessage);
 
-        _db.Employees.Add(employee);
-        await _db.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetById), new { id = employee.Id }, employee.ToDto());
+        return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value!.ToDto());
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<EmployeeDetailsDto>> GetById(Guid id)
+    public async Task<ActionResult<EmployeeDetailsDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var employee = await _db.Employees
-            .AsNoTracking()
-            .Include(e => e.Schedule)
-            .FirstOrDefaultAsync(e => e.Id == id);
+        var employee = await _employees.GetByIdAsync(id, cancellationToken);
         if (employee == null) return NotFound();
         return Ok(employee.ToDetailsDto());
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<EmployeeDto>> Update(Guid id, UpdateEmployeeRequest request)
+    public async Task<ActionResult<EmployeeDto>> Update(Guid id, UpdateEmployeeRequest request, CancellationToken cancellationToken)
     {
-        var employee = await _db.Employees.Include(e => e.Schedule).FirstOrDefaultAsync(e => e.Id == id);
-        if (employee == null)
-            return NotFound();
+        var input = new UpdateEmployeeInput(
+            request.Name,
+            request.Pis,
+            request.AdmissionDate,
+            request.EmployerId,
+            request.Schedule == null ? null : request.Schedule.ToInput());
 
-        var employerExists = await _db.Employers.AnyAsync(e => e.Id == request.EmployerId);
-        if (!employerExists)
-            return BadRequest("Employer not found. Create an employer first.");
+        var result = await _employees.UpdateAsync(id, input, cancellationToken);
+        if (!result.Success)
+            return result.ErrorType == ServiceErrorType.NotFound
+                ? NotFound(result.ErrorMessage)
+                : BadRequest(result.ErrorMessage);
 
-        employee.Name = request.Name;
-        employee.Pis = request.Pis;
-        employee.AdmissionDate = request.AdmissionDate;
-        employee.EmployerId = request.EmployerId;
-
-        if (employee.Schedule == null)
-        {
-            employee.Schedule = request.Schedule.ToEntity();
-            employee.Schedule.EmployeeId = employee.Id;
-        }
-        else
-        {
-            employee.Schedule.UpdateFrom(request.Schedule);
-        }
-
-        await _db.SaveChangesAsync();
-        return Ok(employee.ToDto());
+        return Ok(result.Value!.ToDto());
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var employee = await _db.Employees.FirstOrDefaultAsync(e => e.Id == id);
-        if (employee == null)
-            return NotFound();
+        var result = await _employees.DeleteAsync(id, cancellationToken);
+        if (!result.Success && result.ErrorType == ServiceErrorType.NotFound)
+            return NotFound(result.ErrorMessage);
 
-        _db.Employees.Remove(employee);
-        await _db.SaveChangesAsync();
         return NoContent();
     }
 }

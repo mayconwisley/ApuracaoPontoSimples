@@ -11,7 +11,13 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var conn = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(conn))
+            throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+
         var sqlPassword = Environment.GetEnvironmentVariable("SQLPassword", EnvironmentVariableTarget.Machine);
+        if (string.IsNullOrWhiteSpace(sqlPassword))
+            throw new InvalidOperationException("Environment variable 'SQLPassword' is not configured.");
+
         conn = conn.Replace("{{SQLPassword}}", sqlPassword);
 
         services.AddDbContext<AppDbContext>(opt => opt.UseNpgsql(conn));

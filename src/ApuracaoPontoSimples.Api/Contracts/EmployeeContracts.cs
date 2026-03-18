@@ -1,10 +1,11 @@
+using ApuracaoPontoSimples.Application.Models;
 using ApuracaoPontoSimples.Domain.Entities;
 
 namespace ApuracaoPontoSimples.Api.Contracts;
 
 public sealed record EmployerDto(Guid Id, string Name, string? Cnpj, string? Address);
 public sealed record CreateEmployerRequest(string Name, string? Cnpj, string? Address);
-public sealed record EmployeeDto(Guid Id, string Name, string? Pis, DateOnly? AdmissionDate, Guid EmployerId, Employer Employer);
+public sealed record EmployeeDto(Guid Id, string Name, string? Pis, DateOnly? AdmissionDate, Guid EmployerId, EmployerDto? Employer);
 public sealed record EmployeeDetailsDto(Guid Id, string Name, string? Pis, DateOnly? AdmissionDate, Guid EmployerId, ScheduleConfigDto? Schedule);
 public sealed record ScheduleConfigDto(TimeSpan DailyHours, TimeSpan? DailyLimit, TimeSpan? SaturdayHours, TimeSpan? ToleranceEntry, TimeSpan? ToleranceExit, TimeSpan? NightStart, TimeSpan? NightEnd, TimeSpan? WeeklyHours, bool SaturdayCountsAsBank, bool UseDailyHoursAsY13);
 public sealed record CreateEmployeeRequest(string Name, string? Pis, DateOnly? AdmissionDate, Guid EmployerId, ScheduleConfigDto Schedule);
@@ -16,7 +17,7 @@ public static class EmployeeMappings
         => new(employer.Id, employer.Name, employer.Cnpj, employer.Address);
 
     public static EmployeeDto ToDto(this Employee employee)
-        => new(employee.Id, employee.Name, employee.Pis, employee.AdmissionDate, employee.EmployerId, employee.Employer);
+        => new(employee.Id, employee.Name, employee.Pis, employee.AdmissionDate, employee.EmployerId, employee.Employer?.ToDto());
 
     public static EmployeeDetailsDto ToDetailsDto(this Employee employee)
         => new(
@@ -54,6 +55,19 @@ public static class EmployeeMappings
             entity.WeeklyHours,
             entity.SaturdayCountsAsBank,
             entity.UseDailyHoursAsY13);
+
+    public static ScheduleConfigInput ToInput(this ScheduleConfigDto dto)
+        => new(
+            dto.DailyHours,
+            dto.DailyLimit,
+            dto.SaturdayHours,
+            dto.ToleranceEntry,
+            dto.ToleranceExit,
+            dto.NightStart,
+            dto.NightEnd,
+            dto.WeeklyHours,
+            dto.SaturdayCountsAsBank,
+            dto.UseDailyHoursAsY13);
 
     public static void UpdateFrom(this ScheduleConfig entity, ScheduleConfigDto dto)
     {

@@ -238,10 +238,10 @@ const DayAccordionRow = memo(function DayAccordionRow({ day, index, onChange, is
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Box sx={{ width: "100%" }}>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Typography sx={{ fontWeight: 600 }}>{day.date}</Typography>
+            <Typography sx={{ fontWeight: 600 }}>{formatDateDisplay(day.date)}</Typography>
             {isSundayOnly ? (
               <>
-                <Chip size="small" color="error" label="Domingo" />
+                <Chip size="small" color="error" label="Domingo" /> 
                 {isHoliday && <Chip size="small" color="success" label="Feriado" />}
               </>
             ) : (

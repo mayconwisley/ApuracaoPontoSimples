@@ -1,13 +1,8 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using ApuracaoPontoSimples.Api.Contracts;
-using ApuracaoPontoSimples.Infrastructure.Identity;
+using ApuracaoPontoSimples.Application.Interfaces;
+using ApuracaoPontoSimples.Application.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 
 namespace ApuracaoPontoSimples.Api.Controllers;
 
@@ -15,95 +10,51 @@ namespace ApuracaoPontoSimples.Api.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly RoleManager<ApplicationRole> _roleManager;
-    private readonly IConfiguration _configuration;
+    private readonly IAuthService _authService;
 
-    public AuthController(UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, IConfiguration configuration)
+    public AuthController(IAuthService authService)
     {
-        _userManager = userManager;
-        _roleManager = roleManager;
-        _configuration = configuration;
+        _authService = authService;
     }
 
     [HttpPost("register")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
+    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request, CancellationToken cancellationToken)
     {
-        if (!await _roleManager.RoleExistsAsync(request.Role))
-        {
-            await _roleManager.CreateAsync(new ApplicationRole { Name = request.Role });
-        }
-
-        var user = new ApplicationUser { UserName = request.Email, Email = request.Email, FullName = request.FullName };
-        var result = await _userManager.CreateAsync(user, request.Password);
-
-        if (!result.Succeeded)
-            return BadRequest(result.Errors);
-
-        await _userManager.AddToRoleAsync(user, request.Role);
-
-        return Ok(new AuthResponse(GenerateToken(user, new[] { request.Role })));
+        var input = new RegisterInput(request.Email, request.Password, request.FullName, request.Role);
+        var result = await _authService.RegisterAsync(input, cancellationToken);
+        return ToActionResult(result);
     }
 
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
+    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null)
-            return Unauthorized();
-
-        if (!await _userManager.CheckPasswordAsync(user, request.Password))
-            return Unauthorized();
-
-        var roles = await _userManager.GetRolesAsync(user);
-        return Ok(new AuthResponse(GenerateToken(user, roles)));
+        var input = new LoginInput(request.Email, request.Password);
+        var result = await _authService.LoginAsync(input, cancellationToken);
+        return result.Success ? Ok(new AuthResponse(result.Value!)) : Unauthorized();
     }
 
     [HttpPost("bootstrap")]
     [AllowAnonymous]
-    public async Task<ActionResult<AuthResponse>> Bootstrap(BootstrapRequest request)
+    public async Task<ActionResult<AuthResponse>> Bootstrap(BootstrapRequest request, CancellationToken cancellationToken)
     {
-        if (_userManager.Users.Any())
-            return BadRequest("Bootstrap already executed.");
-
-        const string adminRole = "Admin";
-        if (!await _roleManager.RoleExistsAsync(adminRole))
-        {
-            await _roleManager.CreateAsync(new ApplicationRole { Name = adminRole });
-        }
-
-        var user = new ApplicationUser { UserName = request.Email, Email = request.Email, FullName = request.FullName };
-        var result = await _userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded)
-            return BadRequest(result.Errors);
-
-        await _userManager.AddToRoleAsync(user, adminRole);
-        return Ok(new AuthResponse(GenerateToken(user, new[] { adminRole })));
+        var input = new BootstrapInput(request.Email, request.Password, request.FullName);
+        var result = await _authService.BootstrapAsync(input, cancellationToken);
+        return ToActionResult(result);
     }
 
-    private string GenerateToken(ApplicationUser user, IEnumerable<string> roles)
+    private ActionResult<AuthResponse> ToActionResult(ServiceResult<string> result)
     {
-        var jwtSection = _configuration.GetSection("Jwt");
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"] ?? ""));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        if (result.Success)
+            return Ok(new AuthResponse(result.Value!));
 
-        var claims = new List<Claim>
+        return result.ErrorType switch
         {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new(ClaimTypes.Name, user.UserName ?? string.Empty)
+            ServiceErrorType.Conflict => Conflict(result.ErrorMessage),
+            ServiceErrorType.Validation => BadRequest(result.ErrorMessage),
+            ServiceErrorType.NotFound => NotFound(result.ErrorMessage),
+            _ => BadRequest(result.ErrorMessage)
         };
-        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSection["Issuer"],
-            audience: jwtSection["Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(8),
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

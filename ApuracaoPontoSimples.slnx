@@ -5,4 +5,7 @@
     <Project Path="src/ApuracaoPontoSimples.Domain/ApuracaoPontoSimples.Domain.csproj" />
     <Project Path="src/ApuracaoPontoSimples.Infrastructure/ApuracaoPontoSimples.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ApuracaoPontoSimples.Application.Tests/ApuracaoPontoSimples.Application.Tests.csproj" />
+  </Folder>
 </Solution>

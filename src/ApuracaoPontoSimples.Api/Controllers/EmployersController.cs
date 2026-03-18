@@ -1,9 +1,8 @@
 using ApuracaoPontoSimples.Api.Contracts;
-using ApuracaoPontoSimples.Domain.Entities;
-using ApuracaoPontoSimples.Infrastructure.Persistence;
+using ApuracaoPontoSimples.Application.Interfaces;
+using ApuracaoPontoSimples.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ApuracaoPontoSimples.Api.Controllers;
 
@@ -12,60 +11,46 @@ namespace ApuracaoPontoSimples.Api.Controllers;
 [Authorize]
 public sealed class EmployersController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly IEmployerService _employers;
 
-    public EmployersController(AppDbContext db)
+    public EmployersController(IEmployerService employers)
     {
-        _db = db;
+        _employers = employers;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<EmployerDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<EmployerDto>>> GetAll(CancellationToken cancellationToken)
     {
-        var employers = await _db.Employers.AsNoTracking().ToListAsync();
+        var employers = await _employers.GetAllAsync(cancellationToken);
         return Ok(employers.Select(e => e.ToDto()));
     }
 
     [HttpPost]
-    public async Task<ActionResult<EmployerDto>> Create(CreateEmployerRequest request)
+    public async Task<ActionResult<EmployerDto>> Create(CreateEmployerRequest request, CancellationToken cancellationToken)
     {
-        var employer = new Employer
-        {
-            Name = request.Name,
-            Cnpj = request.Cnpj,
-            Address = request.Address
-        };
-
-        _db.Employers.Add(employer);
-        await _db.SaveChangesAsync();
-
-        return Ok(employer.ToDto());
+        var input = new CreateEmployerInput(request.Name, request.Cnpj, request.Address);
+        var result = await _employers.CreateAsync(input, cancellationToken);
+        return Ok(result.Value!.ToDto());
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<EmployerDto>> Update(Guid id, CreateEmployerRequest request)
+    public async Task<ActionResult<EmployerDto>> Update(Guid id, CreateEmployerRequest request, CancellationToken cancellationToken)
     {
-        var employer = await _db.Employers.FirstOrDefaultAsync(e => e.Id == id);
-        if (employer == null)
-            return NotFound();
+        var input = new UpdateEmployerInput(request.Name, request.Cnpj, request.Address);
+        var result = await _employers.UpdateAsync(id, input, cancellationToken);
+        if (!result.Success)
+            return NotFound(result.ErrorMessage);
 
-        employer.Name = request.Name;
-        employer.Cnpj = request.Cnpj;
-        employer.Address = request.Address;
-
-        await _db.SaveChangesAsync();
-        return Ok(employer.ToDto());
+        return Ok(result.Value!.ToDto());
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var employer = await _db.Employers.FirstOrDefaultAsync(e => e.Id == id);
-        if (employer == null)
-            return NotFound();
+        var result = await _employers.DeleteAsync(id, cancellationToken);
+        if (!result.Success)
+            return NotFound(result.ErrorMessage);
 
-        _db.Employers.Remove(employer);
-        await _db.SaveChangesAsync();
         return NoContent();
     }
 }
